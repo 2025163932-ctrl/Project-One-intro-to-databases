@@ -1,3 +1,4 @@
+--Creation of the Venue table--
 CREATE TABLE Venue (
 	Venue_id INT PRIMARY KEY,
 	Venue_name VARCHAR(100),
@@ -7,7 +8,7 @@ CREATE TABLE Venue (
 	Indoor BOOL
 );
 
-
+--Creation of the Shows table--
 CREATE TABLE Shows (
 	Shows_id SERIAL PRIMARY KEY,
 	Show_name VARCHAR(100),
@@ -20,6 +21,7 @@ CREATE TABLE Shows (
 	FOREIGN KEY (Venue_id) REFERENCES Venue (Venue_id)
 );
 
+--Creation of the Artist table--
 CREATE TABLE Artist (
 	Artist_id INT PRIMARY KEY,
 	Artist_name VARCHAR(100),
@@ -28,7 +30,7 @@ CREATE TABLE Artist (
 
 );
 
-
+--Creation of the Show_Artist table (bridge Table)--
 CREATE TABLE Show_Artist (
 	Shows_id SERIAL,
 	Artist_id INT,
