@@ -4,13 +4,10 @@ SELECT
     Venue_name AS Venue,
     Address,
     Artist_name AS Artist
-FROM Shows
-	JOIN Venue 
-		ON Shows.Venue_id = Venue.Venue_id
-	JOIN Show_Artist 
-		ON Shows.Shows_id = Show_Artist.Shows_id
-	JOIN Artist 
-		ON Show_Artist.Artist_id = Artist.Artist_id;
+FROM Shows, Venue, Show_Artist, Artist
+WHERE Shows.Venue_id = Venue.Venue_id
+AND Shows.Shows_id = Show_Artist.Shows_id
+AND Show_Artist.Artist_id = Artist.Artist_id;
 
 --Idenify any overlapping--
 SELECT 
@@ -27,20 +24,17 @@ SELECT
     Show_name AS Show,
     Price,
     Artist_name AS Artist
-FROM Shows
-    JOIN Show_Artist 
-        ON Shows.Shows_id = Show_Artist.Shows_id
-    JOIN Artist 
-        ON Show_Artist.Artist_id = Artist.Artist_id
-    WHERE Price = (SELECT MAX(Price) FROM Shows);
+FROM Shows, Show_Artist, Artist
+    WHERE Shows.Shows_id = Show_Artist.Shows_id
+        AND Show_Artist.Artist_id = Artist.Artist_id
+        AND Price = (SELECT MAX(Price) FROM Shows);
 
 --Find the venue that on average hosted expensive shows--
 SELECT 
     Venue_name AS Venue,
     AVG(Price) AS HighestAveragePrice
-FROM Shows
-    JOIN Venue 
-        ON Shows.Venue_id = Venue.Venue_id
+FROM Shows, Venue
+    WHERE Shows.Venue_id = Venue.Venue_id
     GROUP BY Venue_name
     ORDER BY AVG(Price) DESC
     LIMIT 1;
@@ -49,7 +43,6 @@ FROM Shows
 SELECT 
     Show_name AS Show,
     COUNT(Artist_id) AS NumberOfArtist
-FROM Shows
-    LEFT JOIN Show_Artist 
-        ON Shows.Shows_id = Show_Artist.Shows_id
+FROM Shows, Show_Artist
+    WHERE Shows.Shows_id = Show_Artist.Shows_id
     GROUP BY Show_name;
