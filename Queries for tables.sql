@@ -5,9 +5,9 @@ SELECT
     Address,
     Artist_name AS Artist
 FROM Shows, Venue, Show_Artist, Artist
-WHERE Shows.Venue_id = Venue.Venue_id
-AND Shows.Shows_id = Show_Artist.Shows_id
-AND Show_Artist.Artist_id = Artist.Artist_id;
+    WHERE Shows.Venue_id = Venue.Venue_id
+        AND Shows.Shows_id = Show_Artist.Shows_id
+        AND Show_Artist.Artist_id = Artist.Artist_id;
 
 --Idenify any overlapping--
 SELECT 
