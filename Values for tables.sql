@@ -1,7 +1,7 @@
 --Values for the Venue table--
 INSERT INTO Venue (Venue_id, Venue_name, Address, Phone, District, Indoor)
 VALUES
-(1, 'The Gilded Ballroom', 'Beaver Street', 6214533, 'Cayo', TRUE)
+(1, 'The Gilded Ballroom', 'Beaver Street', 6214533, 'Cayo', TRUE),
 (2, 'Crystal Palace', 'Madison Avenue', 7283456, 'Orange Walk', TRUE),
 (3, 'Riverfront Hall', 'Hudson Street', 6349821, 'Toledo', FALSE),
 (4, 'Grand Empire Venue', 'Lexington Ave', 8123456, 'Corozal', TRUE),
@@ -63,7 +63,7 @@ VALUES
 --Values for Artist table--
 INSERT INTO Artist (Artist_id, Artist_name, Genre, District)
 VALUES
-(1, 'Pen_Cayetano', 'Punta_Rock', 'Stann_Creek')
+(1, 'Pen_Cayetano', 'Punta_Rock', 'Stann_Creek'),
 (2, 'Andy_Palacio', 'Garifuna', 'Toledo'),
 (3, 'Supa_G', 'Punta_Rock', 'Belize'),
 (4, 'Aziatic', 'Garifuna', 'Orange_Walk'),
