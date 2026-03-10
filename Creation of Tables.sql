@@ -3,7 +3,7 @@ CREATE TABLE Venue (
 	Venue_id INT PRIMARY KEY,
 	Venue_name VARCHAR(100),
 	Address VARCHAR(50),
-	Phone INT,
+	Phone VARCHAR (15),
 	District VARCHAR(25),
 	Indoor BOOL
 );
@@ -12,8 +12,8 @@ CREATE TABLE Venue (
 CREATE TABLE Shows (
 	Shows_id SERIAL PRIMARY KEY,
 	Show_name VARCHAR(100),
-	Start_date TIMESTAMP,
-	End_date TIMESTAMP,
+	Start_date TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+	End_date TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
 	Price FLOAT,
 	Description VARCHAR(200),
 	Event_type VARCHAR(50),
