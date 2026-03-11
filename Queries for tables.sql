@@ -16,15 +16,16 @@ ORDER BY s.Show_name;
 SELECT 
     s1.Show_name AS Show1,
     s2.Show_name AS Show2,
-    s1.Start_date,
-    s1.End_date,
-    s2.Start_date,
-    s2.End_date
+    s1.Start_date AS StartingTime1,
+    s1.End_date AS EndingTime1,
+    s2.Start_date AS StartingTime2,
+    s2.End_date AS StartingTime2
 FROM Shows s1
 JOIN Shows s2 
-    ON s1.Shows_id < s2.Shows_id
-WHERE s1.Start_date < s2.End_date
-AND s1.End_date > s2.Start_date;
+ON s1.Shows_id < s2.Shows_id
+WHERE 
+    s1.Start_date < s2.End_date
+    AND s1.End_date > s2.Start_date;
 
 
 SELECT 
