@@ -3,7 +3,7 @@ CREATE TABLE Venue (
 	Venue_id INT PRIMARY KEY,
 	Venue_name VARCHAR(100),
 	Address VARCHAR(50),
-	Phone VARCHAR (15),
+	Phone INT,
 	District VARCHAR(25),
 	Indoor BOOL
 );
