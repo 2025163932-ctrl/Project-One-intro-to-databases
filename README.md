@@ -1,4 +1,4 @@
-# CMPS1171 Project 1 – Show Management System
+# Show Management System
 
 ## Project Overview
 
