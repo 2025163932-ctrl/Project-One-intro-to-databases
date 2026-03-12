@@ -1,3 +1,46 @@
+--Creation of the Venue table--
+CREATE TABLE Venue (
+	Venue_id INT PRIMARY KEY,
+	Venue_name VARCHAR(100),
+	Address VARCHAR(50),
+	Phone INT,
+	District VARCHAR(25),
+	Indoor BOOL
+);
+
+--Creation of the Shows table--
+CREATE TABLE Shows (
+	Shows_id SERIAL PRIMARY KEY,
+	Show_name VARCHAR(100),
+	Start_date TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+	End_date TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+	Price FLOAT,
+	Description VARCHAR(200),
+	Event_type VARCHAR(50),
+	Venue_id INT,
+	FOREIGN KEY (Venue_id) REFERENCES Venue (Venue_id)
+);
+
+--Creation of the Artist table--
+CREATE TABLE Artist (
+	Artist_id INT PRIMARY KEY,
+	Artist_name VARCHAR(100),
+	Genre VARCHAR(20),
+	District VARCHAR(25)
+
+);
+
+--Creation of the Show_Artist table (bridge Table)--
+CREATE TABLE Show_Artist (
+	Shows_id SERIAL,
+	Artist_id INT,
+	Performance_time FLOAT,
+	PRIMARY KEY (Shows_id, Artist_id),
+	FOREIGN KEY (Shows_id) REFERENCES Shows (Shows_id),
+	FOREIGN KEY (Artist_id) REFERENCES Artist (Artist_id)
+	
+);
+
 --Values for the Venue table--
 INSERT INTO Venue (Venue_id, Venue_name, Address, Phone, District, Indoor)
 VALUES
@@ -58,3 +101,64 @@ VALUES
 (5, 8, 5.00),
 (9, 7, 4.00),
 (10, 4, 5.00);
+
+
+--List each show along with all artists--
+SELECT 
+    s.Show_name AS ShowName,
+    v.Venue_name AS Venue,
+    v.Address AS Address,
+    a.Artist_name AS Artist
+FROM Shows s
+    JOIN Venue v ON s.Venue_id = v.Venue_id
+    JOIN Show_Artist sa ON s.Shows_id = sa.Shows_id
+    JOIN Artist a ON sa.Artist_id = a.Artist_id
+ORDER BY s.Show_name;
+
+
+
+--Idenify any overlapping--
+SELECT 
+    s1.Show_name AS Show1,
+    s2.Show_name AS Show2,
+    s1.Start_date AS StartingTime1,
+    s1.End_date AS EndingTime1,
+    s2.Start_date AS StartingTime2,
+    s2.End_date AS StartingTime2
+FROM Shows s1
+JOIN Shows s2 
+ON s1.Shows_id < s2.Shows_id
+WHERE 
+    s1.Start_date < s2.End_date
+    AND s1.End_date > s2.Start_date;
+
+
+SELECT 
+    s.Show_name AS Show,
+    s.Price AS Cost,
+    a.Artist_name AS ARTIST
+FROM Shows s
+    JOIN Show_Artist sa ON s.Shows_id = sa.Shows_id
+    JOIN Artist a ON sa.Artist_id = a.Artist_id
+WHERE s.Price = (SELECT MAX(Price) FROM Shows);
+
+
+--Find the venue that on average hosted expensive shows--
+SELECT 
+SELECT 
+    v.Venue_name AS VenueName,
+    AVG(s.Price) AS AveragePrice
+FROM Shows s
+    JOIN Venue v ON s.Venue_id = v.Venue_id
+GROUP BY v.Venue_name
+ORDER BY AveragePrice DESC
+LIMIT 1;
+
+--list shows along with total number of artist performing in the shows--
+SELECT 
+    s.Show_name AS ShowName,
+    COUNT(sa.Artist_id) AS TotalArtists
+FROM Shows s
+    LEFT JOIN Show_Artist sa ON s.Shows_id = sa.Shows_id
+GROUP BY s.Show_name
+ORDER BY s.Show_name;
