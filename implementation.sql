@@ -132,6 +132,7 @@ WHERE
     s1.Start_date < s2.End_date
     AND s1.End_date > s2.Start_date;
 
+--Find the most expensive show and list all artists.--
 
 SELECT 
     s.Show_name AS Show,
@@ -145,7 +146,6 @@ WHERE s.Price = (SELECT MAX(Price) FROM Shows);
 
 --Find the venue that on average hosted expensive shows--
 SELECT 
-SELECT 
     v.Venue_name AS VenueName,
     AVG(s.Price) AS AveragePrice
 FROM Shows s
@@ -153,6 +153,7 @@ FROM Shows s
 GROUP BY v.Venue_name
 ORDER BY AveragePrice DESC
 LIMIT 1;
+
 
 --list shows along with total number of artist performing in the shows--
 SELECT 
