@@ -79,7 +79,7 @@ This structure allows multiple artists to perform at one show and allows an arti
 
 ## Repository Structure
 
-The repository contains two main SQL scripts:
+The repository contains one file that has two part in it:
 
 ### 1. setup.sql
 
