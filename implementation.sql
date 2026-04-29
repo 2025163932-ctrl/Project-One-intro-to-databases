@@ -163,3 +163,86 @@ FROM Shows s
     LEFT JOIN Show_Artist sa ON s.Shows_id = sa.Shows_id
 GROUP BY s.Show_name
 ORDER BY s.Show_name;
+
+
+--Stored procedures
+
+--Q1  CreateShowPackage: Creates a show and assigns multiple artists at once using an array or temp table. 
+CREATE OR REPLACE PROCEDURE CreateShowPackage(
+    p_show_name     VARCHAR,
+    p_show_date     DATE,
+    p_venue         VARCHAR,
+    p_artist_ids    INT[]
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_show_id INT;
+    v_artist  INT;
+BEGIN
+    -- Step 1: Create the show
+    INSERT INTO shows (show_name, show_date, venue)
+    VALUES (p_show_name, p_show_date, p_venue)
+    RETURNING id INTO v_show_id;
+
+    -- Step 2: Loop through the array and assign each artist
+    FOREACH v_artist IN ARRAY p_artist_ids LOOP
+        INSERT INTO show_artists (show_id, artist_id)
+        VALUES (v_show_id, v_artist);
+    END LOOP;
+
+    RAISE NOTICE 'Show "%" created with ID % and % artists assigned.',
+        p_show_name, v_show_id, array_length(p_artist_ids, 1);
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'CreateShowPackage failed: %', SQLERRM;
+END;
+$$;
+
+CALL CreateShowPackage(
+    'Jazz Night',
+    '2025-06-15',
+    'Grand Hall',
+    ARRAY[1, 2, 3, 5]
+);
+
+
+--Q2 CancelShow: Deletes a show and all its artist associations safely.
+
+CREATE OR REPLACE PROCEDURE CancelShow(
+    p_show_id INT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_show_name VARCHAR;
+BEGIN
+    -- Step 1: Confirm the show exists
+    SELECT show_name INTO v_show_name
+    FROM shows
+    WHERE id = p_show_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Show with ID % does not exist.', p_show_id;
+    END IF;
+
+    -- Step 2: Delete artist associations first (FK safety)
+    DELETE FROM show_artists
+    WHERE show_id = p_show_id;
+
+    -- Step 3: Delete the show itself
+    DELETE FROM shows
+    WHERE id = p_show_id;
+
+    RAISE NOTICE 'Show "%" (ID: %) and all artist links have been deleted.', 
+        v_show_name, p_show_id;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE EXCEPTION 'CancelShow failed: %', SQLERRM;
+END;
+$$;
+
+
+CALL CancelShow(7);
