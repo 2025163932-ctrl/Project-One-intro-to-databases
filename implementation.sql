@@ -103,76 +103,20 @@ VALUES
 (10, 4, 5.00);
 
 
---List each show along with all artists--
-SELECT 
-    s.Show_name AS ShowName,
-    v.Venue_name AS Venue,
-    v.Address AS Address,
-    a.Artist_name AS Artist
-FROM Shows s
-    JOIN Venue v ON s.Venue_id = v.Venue_id
-    JOIN Show_Artist sa ON s.Shows_id = sa.Shows_id
-    JOIN Artist a ON sa.Artist_id = a.Artist_id
-ORDER BY s.Show_name;
-
-
-
---Idenify any overlapping--
-SELECT 
-    s1.Show_name AS Show1,
-    s2.Show_name AS Show2,
-    s1.Start_date AS StartingTime1,
-    s1.End_date AS EndingTime1,
-    s2.Start_date AS StartingTime2,
-    s2.End_date AS StartingTime2
-FROM Shows s1
-JOIN Shows s2 
-ON s1.Shows_id < s2.Shows_id
-WHERE 
-    s1.Start_date < s2.End_date
-    AND s1.End_date > s2.Start_date;
-
---Find the most expensive show and list all artists.--
-
-SELECT 
-    s.Show_name AS Show,
-    s.Price AS Cost,
-    a.Artist_name AS ARTIST
-FROM Shows s
-    JOIN Show_Artist sa ON s.Shows_id = sa.Shows_id
-    JOIN Artist a ON sa.Artist_id = a.Artist_id
-WHERE s.Price = (SELECT MAX(Price) FROM Shows);
-
-
---Find the venue that on average hosted expensive shows--
-SELECT 
-    v.Venue_name AS VenueName,
-    AVG(s.Price) AS AveragePrice
-FROM Shows s
-    JOIN Venue v ON s.Venue_id = v.Venue_id
-GROUP BY v.Venue_name
-ORDER BY AveragePrice DESC
-LIMIT 1;
-
-
---list shows along with total number of artist performing in the shows--
-SELECT 
-    s.Show_name AS ShowName,
-    COUNT(sa.Artist_id) AS TotalArtists
-FROM Shows s
-    LEFT JOIN Show_Artist sa ON s.Shows_id = sa.Shows_id
-GROUP BY s.Show_name
-ORDER BY s.Show_name;
-
-
 --Stored procedures
 
---Q1  CreateShowPackage: Creates a show and assigns multiple artists at once using an array or temp table. 
+-- Q1: CreateShowPackage
+-- Creates a show and assigns multiple artists at once
+
 CREATE OR REPLACE PROCEDURE CreateShowPackage(
-    p_show_name     VARCHAR,
-    p_show_date     DATE,
-    p_venue         VARCHAR,
-    p_artist_ids    INT[]
+    p_show_name      VARCHAR,
+    p_start_date     TIMESTAMP,
+    p_end_date       TIMESTAMP,
+    p_price          FLOAT,
+    p_description    VARCHAR,
+    p_event_type     VARCHAR,
+    p_venue_id       INT,
+    p_artist_ids     INT[]
 )
 LANGUAGE plpgsql
 AS $$
@@ -181,14 +125,14 @@ DECLARE
     v_artist  INT;
 BEGIN
     -- Step 1: Create the show
-    INSERT INTO shows (show_name, show_date, venue)
-    VALUES (p_show_name, p_show_date, p_venue)
-    RETURNING id INTO v_show_id;
+    INSERT INTO Shows (Show_name, Start_date, End_date, Price, Description, Event_type, Venue_id)
+    VALUES (p_show_name, p_start_date, p_end_date, p_price, p_description, p_event_type, p_venue_id)
+    RETURNING Shows_id INTO v_show_id;
 
     -- Step 2: Loop through the array and assign each artist
     FOREACH v_artist IN ARRAY p_artist_ids LOOP
-        INSERT INTO show_artists (show_id, artist_id)
-        VALUES (v_show_id, v_artist);
+        INSERT INTO Show_Artist (Shows_id, Artist_id, Performance_time)
+        VALUES (v_show_id, v_artist, 0.0);
     END LOOP;
 
     RAISE NOTICE 'Show "%" created with ID % and % artists assigned.',
@@ -200,15 +144,21 @@ EXCEPTION
 END;
 $$;
 
+-- Example call:
 CALL CreateShowPackage(
     'Jazz Night',
-    '2025-06-15',
-    'Grand Hall',
+    '2025-06-15 20:00:00',
+    '2025-06-15 23:00:00',
+    85.00,
+    'A smooth evening of live jazz',
+    'Concert',
+    1,
     ARRAY[1, 2, 3, 5]
 );
 
 
---Q2 CancelShow: Deletes a show and all its artist associations safely.
+-- Q2: CancelShow
+-- Deletes a show and all its artist associations safely
 
 CREATE OR REPLACE PROCEDURE CancelShow(
     p_show_id INT
@@ -219,23 +169,23 @@ DECLARE
     v_show_name VARCHAR;
 BEGIN
     -- Step 1: Confirm the show exists
-    SELECT show_name INTO v_show_name
-    FROM shows
-    WHERE id = p_show_id;
+    SELECT Show_name INTO v_show_name
+    FROM Shows
+    WHERE Shows_id = p_show_id;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Show with ID % does not exist.', p_show_id;
     END IF;
 
     -- Step 2: Delete artist associations first (FK safety)
-    DELETE FROM show_artists
-    WHERE show_id = p_show_id;
+    DELETE FROM Show_Artist
+    WHERE Shows_id = p_show_id;
 
     -- Step 3: Delete the show itself
-    DELETE FROM shows
-    WHERE id = p_show_id;
+    DELETE FROM Shows
+    WHERE Shows_id = p_show_id;
 
-    RAISE NOTICE 'Show "%" (ID: %) and all artist links have been deleted.', 
+    RAISE NOTICE 'Show "%" (ID: %) and all artist links have been deleted.',
         v_show_name, p_show_id;
 
 EXCEPTION
@@ -244,5 +194,107 @@ EXCEPTION
 END;
 $$;
 
-
+-- Example call:
 CALL CancelShow(7);
+
+--Functions 
+
+-- Q1 CalculateTotalArtistCount: Returns the number of artists assigned to a specific Show Name.
+
+SELECT * FROM show_artist;
+
+CREATE OR REPLACE FUNCTION CalculateTotalArtistCount (p_show_id INT)
+RETURNS INT
+LANGUAGE plpgsql
+AS $$ 
+	DECLARE count_artist INT;
+	BEGIN
+		SELECT COUNT(*) INTO count_artist
+		FROM show_artist
+		WHERE shows_id = P_show_id;
+		RETURN count_artist;
+	END;
+$$;
+
+SELECT CalculateTotalArtistCount(3);
+
+
+--Q2 GetShowDuration: Calculates the days between StartDate and EndDate.
+
+SELECT * FROM shows;
+
+CREATE OR REPLACE FUNCTION GetShowDuration(p_show_id INT)
+RETURNS INTERVAL
+LANGUAGE plpgsql
+AS $$ 
+	DECLARE daysBetween INTERVAL;
+	BEGIN
+		SELECT end_date - start_date INTO daysBetween
+		FROM shows
+		WHERE shows_id = p_show_id;
+	RETURN daysBetween;
+	END;
+$$;
+
+SELECT GetShowDuration(2);
+
+--Trigger
+
+-- NoSchedulingConflict: Prevents a venue from having two shows on the same date.
+
+CREATE OR REPLACE FUNCTION no_scheduling_conflict()
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    -- Validate time range
+    IF NEW.end_date <= NEW.start_date THEN
+        RAISE EXCEPTION 'Invalid time range: end_date must be after start_date';
+    END IF;
+
+    -- Check overlapping shows at same venue
+    IF EXISTS (
+        SELECT 1
+        FROM shows
+        WHERE venue_id = NEW.venue_id
+          AND NEW.start_date < end_date
+          AND NEW.end_date > start_date
+          AND id != NEW.id
+    ) THEN
+        RAISE EXCEPTION 'Scheduling conflict: This venue already has a show during this time';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ 
+
+CREATE TRIGGER NoSchedulingConflict
+BEFORE INSERT ON shows
+FOR EACH ROW
+EXECUTE FUNCTION no_scheduling_conflict();
+
+--Sql Queries
+
+--Q1 List each show along with all participating artists using a multi-table JOIN.
+
+SELECT s.Show_name AS ShowName,
+       v.Venue_name AS Venue,
+       a.Artist_name AS Artist
+FROM Shows s
+INNER JOIN Venue v ON s.Venue_id = v.Venue_id
+INNER JOIN Show_Artist sa ON s.Shows_id = sa.Shows_id
+INNER JOIN Artist a ON sa.Artist_id = a.Artist_id
+ORDER BY s.Show_name;
+
+--Q2 Find the most expensive show and its performers using a subquery.
+
+SELECT s.Show_name AS Show,
+       s.Price AS Cost,
+       a.Artist_name AS Artist
+FROM Shows s
+INNER JOIN Show_Artist sa ON s.Shows_id = sa.Shows_id
+INNER JOIN Artist a ON sa.Artist_id = a.Artist_id
+WHERE s.Price = (SELECT MAX(Price) FROM Shows);
+
+
+
